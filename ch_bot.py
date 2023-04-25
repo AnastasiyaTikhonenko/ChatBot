@@ -1,4 +1,4 @@
-from kom_imp import sender
+from keyboard import sender
 from main import *
 
 for event in ch_bot.longpoll.listen():
@@ -8,7 +8,7 @@ for event in ch_bot.longpoll.listen():
         msg = event.text.lower()
         sender(user_id, msg.lower())
         if request == 'поиск':
-            creating_database()
+            create_tables()
             ch_bot.write_msg(user_id, f'Привет, {ch_bot.name(user_id)}')
             ch_bot.find_user(user_id)
             ch_bot.write_msg(event.user_id, f'Пара найдена, нажмите "старт"')
