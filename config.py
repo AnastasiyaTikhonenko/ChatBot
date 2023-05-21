@@ -5,5 +5,5 @@ my_token = ''
 
 localhost = '127.0.0.1'
 user = 'postgres'
-password = 'Boltolog17'
+password = ''
 db_name = 'vk_candidates'
