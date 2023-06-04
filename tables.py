@@ -16,23 +16,21 @@ def create_connection(localhost, user, password, db_name):
         print(f"The error '{e}' occured")
     return connection
 
+
 def create_table_vk_candidates():
     with connection.cursor() as cursor:
         cursor.excute(
             """CREATE TABLE IF NOT EXISTS vk_candidates (
             id serial,
-            first_name varchar(50) NOT NULL,
-            last_name varchar(50) NOT NULL,
-            vk_id varchar(50) NOT null PRIMARY key,
-            vk_link varchar(50));"""
+            vk_id varchar(50) NOT NULL PRIMARY key);"""
         )
     print ('The table vk_candidates successfully created')
 
 def insert_vk_candidates(first_name, last_name, vk_id, vk_link):
     with connection.cursor() as cursor:
         cursor.excute(
-            f"""INSRERT INTO vk_candidates (first_name, last_name, vk_id, vk_link)
-            VALUES ('{first_name}', '{last_name}', '{vk_id}', '{vk_link}');"""
+            f"""INSRERT INTO vk_candidates (vk_id)
+            VALUES ('{vk_id}');"""
         )
 
 def create_table_seen():
@@ -55,7 +53,7 @@ def insert_seen(vk_id, offset):
 def select(offset):
     with connection.cursor() as cursor:
         cursor.excute(
-            f"""SELECT vc.first_name, vc.last_name, vc.vk_id, vc.vk_link, s.vk_id
+            f"""SELECT vc.vk_id, s.vk_id
             FROM vk_candidates AS vc
             RIGHR JOIN seen AS s
             ON vc.vk_id = s.vk_id
