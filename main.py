@@ -1,13 +1,9 @@
 from pprint import pprint
 from datetime import datetime
-# импорты
 import vk_api
 from vk_api.exceptions import ApiError
 
 from config import my_token
-
-
-# получение данных о пользователе
 
 
 class VkTools:
@@ -15,8 +11,13 @@ class VkTools:
         self.vkapi = vk_api.VkApi(token=my_token)
 
     def _bdate_toyear(self, bdate):
-        user_year = bdate.split('.')[2]
+        dates = bdate.split('.')
         now = datetime.now().year
+        if len(dates) > 2:
+            user_year = [2]
+        else:
+            user_year = now
+
         return now - int(user_year)
 
     def get_profile_info(self, user_id):
