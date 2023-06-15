@@ -5,17 +5,17 @@ from config import localhost, user, password, db_name
 
 # def create_connection(localhost, user, password, db_name):
 # connection = None
-# try:
-# connection = psycopg2.connect(
-# localhost=localhost,
-# user=user,
-# password=password,
-# db_name=db_name,
-# )
-# print("[INFO] Connection to PostgreSQL has success")
-# except OperationalError as e:
-# print(f"The error '{e}' occured")
-# return connection
+#    try:
+#        connection = psycopg2.connect(
+#        localhost=localhost,
+#        user=user,
+#        password=password,
+#        db_name=db_name,
+#        )
+#    print("[INFO] Connection to PostgreSQL has success")
+#    except OperationalError as e:
+#    print(f"The error '{e}' occured")
+#    return connection
 
 
 connection = psycopg2.connect("host='localhost' user='user' password='password' dbname='db_name'")

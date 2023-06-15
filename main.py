@@ -13,12 +13,13 @@ class VkTools:
     def _bdate_toyear(self, bdate):
         dates = bdate.split('.')
         now = datetime.now().year
-        if len(dates) > 2:
+        if len(dates) > 2 and bdate is not None:
             user_year = [2]
+            dates.append(int(user_year[0]))
         else:
             user_year = now
 
-        return now - int(user_year)
+        return now - user_year
 
     def get_profile_info(self, user_id):
 
@@ -54,7 +55,7 @@ class VkTools:
                                       }
                                       )
         except ApiError as e:
-            users = []
+            users = {}
             print(f'error = {e}')
 
         result = [{'name': item['first_name'] + item['last_name'],

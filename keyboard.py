@@ -6,9 +6,6 @@ from config import comm_token, my_token
 from main import VkTools
 
 
-# отправка сообщений
-
-
 class BotInterface():
     def __init__(self, comm_token, my_token):
         self.vk = vk_api.VkApi(token=comm_token)
