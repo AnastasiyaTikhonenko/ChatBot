@@ -14,12 +14,12 @@ class VkTools:
         dates = bdate.split('.')
         now = datetime.now().year
         if len(dates) > 2 and bdate is not None:
-            user_year = [2]
-            dates.append(int(user_year[0]))
+            user_year = dates[2]
+            # dates.append(int(user_year[2]))
         else:
             user_year = now
 
-        return now - user_year
+        return now - int(user_year)
 
     def get_profile_info(self, user_id):
 
