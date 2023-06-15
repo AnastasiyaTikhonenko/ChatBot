@@ -18,18 +18,17 @@ from config import localhost, user, password, db_name
 #    return connection
 
 
-connection = psycopg2.connect("host='localhost' user='user' password='password' dbname='db_name'")
+connection = psycopg2.connect(
+    "host='" + localhost + "' user='" + user + "' password='" + password + "' dbname='" + db_name + "'")
 
 connection.autocommit = True
 
 
 def create_table_vk_candidates():
-    with connection.cursor() as cursor:
-        cursor.excute(
-            """CREATE TABLE IF NOT EXISTS vk_candidates (
-            id serial,
-            vk_id varchar(50) NOT NULL PRIMARY key);"""
-        )
+    cur = connection.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS vk_candidates (
+               id serial,
+               vk_id varchar(50) NOT NULL PRIMARY key);""")
     print('The table vk_candidates successfully created')
 
 def insert_vk_candidates(first_name, last_name, vk_id, vk_link):
@@ -39,14 +38,14 @@ def insert_vk_candidates(first_name, last_name, vk_id, vk_link):
             VALUES ('{vk_id}');"""
         )
 
+
 def create_table_seen():
-    with connection.cursor() as cursor:
-        cursor.excute(
-            """CREATE TABLE IF NOT EXISTS vk_candidates (
+    cur = connection.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS vk_candidates (
             id serial,
             vk_id varchar(50) NOT null PRIMARY key);"""
-        )
-    print ('The table seen successfully created')
+                )
+    print('The table seen successfully created')
 
 def insert_seen(vk_id, offset):
     with connection.cursor() as cursor:
