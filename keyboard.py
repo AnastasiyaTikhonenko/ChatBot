@@ -1,9 +1,11 @@
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 from config import comm_token, my_token
 from main import VkTools
+import json
 
 
 class BotInterface():
@@ -15,15 +17,32 @@ class BotInterface():
         self.worksheets = []
         self.offset = 0
 
-    def message_send(self, user_id, message, attachment=None):
+    def message_send(self, user_id, message, attachment=None, keyboard=None):
         self.vk.method('messages.send',
                        {'user_id': user_id,
                         'message': message,
                         'attachment': attachment,
+                        'keyboard': keyboard,
                         'random_id': get_random_id()}
                        )
 
-    # обработка событий / получение сообщений
+    def buttons(self, user_id, message):
+        keyb = {"one_time": True, "buttons": []}
+        self.vk.method('messages.send',
+                       {'user_id': user_id,
+                        'message': message,
+                        'keyboard': json.dumps(keyb),
+                        'random_id': get_random_id()}
+                       )
+
+    # def search_button(self):
+    #     keyboard = VkKeyboard(one_time=True)
+    #     keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
+    #     keyboard.add_line()
+    #     keyboard.add_button(label="отмена", color=VkKeyboardColor.SECONDARY)
+    # return keyboard
+
+    # event handling / receive msg
 
     def event_handler(self):
         for event in self.longpoll.listen():
@@ -32,8 +51,12 @@ class BotInterface():
                     '''Логика для получения данных о пользователе'''
                     self.params = self.vk_tools.get_profile_info(event.user_id)
                     self.message_send(
-                        event.user_id, f'Привет друг, {self.params["name"]}')
+                        event.user_id, f'Привет, друг, {self.params["name"]}')
                 elif event.text.lower() == 'поиск':
+                    keyboard = VkKeyboard(one_time=True)
+                    keyboard.add_callback_button(label="поиск", color=VkKeyboardColor.POSITIVE)
+                    keyboard.add_line()
+                    keyboard.add_button(label="отмена", color=VkKeyboardColor.SECONDARY)
                     '''Логика для поиска анкет'''
                     self.message_send(
                         event.user_id, 'Начинаем поиск')
