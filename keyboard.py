@@ -18,13 +18,14 @@ class BotInterface():
         self.offset = 0
 
     def message_send(self, user_id, message, attachment=None, keyboard=None):
-        self.vk.method('messages.send',
-                       {'user_id': user_id,
-                        'message': message,
-                        'attachment': attachment,
-                        'keyboard': keyboard,
-                        'random_id': get_random_id()}
-                       )
+        result = self.vk.method('messages.send',
+                                {'user_id': user_id,
+                                 'message': message,
+                                 'attachment': attachment,
+                                 'keyboard': keyboard,
+                                 'random_id': get_random_id()}
+                                )
+        print(result)
 
     def buttons(self, user_id, message):
         keyb = {"one_time": True, "buttons": []}
@@ -35,13 +36,6 @@ class BotInterface():
                         'random_id': get_random_id()}
                        )
 
-    # def search_button(self):
-    #     keyboard = VkKeyboard(one_time=True)
-    #     keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
-    #     keyboard.add_line()
-    #     keyboard.add_button(label="отмена", color=VkKeyboardColor.SECONDARY)
-    # return keyboard
-
     # event handling / receive msg
 
     def event_handler(self):
@@ -51,48 +45,52 @@ class BotInterface():
                     '''Receive user's data'''
                     self.params = self.vk_tools.get_profile_info(event.user_id)
                     self.message_send(
-                        event.user_id, f'Привет, друг, {self.params["name"]}')
-                elif event.text.lower() == 'поиск':
-                    keyboard = VkKeyboard(one_time=True)
-                    keyboard.add_callback_button(label="поиск", color=VkKeyboardColor.POSITIVE)
-                    # keyboard.add_line()
-                    # keyboard.add_callback_button(label="отмена", color=VkKeyboardColor.SECONDARY)
-                    '''Searching worksheets'''
-                    self.message_send(
-                        event.user_id, 'Начинаем поиск')
-                    if self.worksheets:
-                        worksheet = self.worksheets.pop()
-                        photos = self.vk_tools.get_photos(worksheet['id'])
-                        photo_string = ''
-                        for photo in photos:
-                            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                    else:
-                        self.worksheets = self.vk_tools.search_worksheet(
-                            self.params, self.offset)
-
-                        worksheet = self.worksheets.pop()
-                        'check worksheets to the data base according to event.user_id'
-
-                        photos = self.vk_tools.get_photos(worksheet['id'])
-                        photo_string = ''
-                        for photo in photos:
-                            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                        self.offset += 10
-
-                    self.message_send(
-                        event.user_id,
-                        f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
-                        attachment=photo_string
-                    )
-
+                        event.user_id, f'Привет, {self.params["name"]}')
+                elif event.text.lower() == 'поиск' or event.text.lower() == 'следующий':
+                    self.params = self.vk_tools.get_profile_info(event.user_id)
+                    settings = dict(one_time=False, inline=True)
+                    keyboard = VkKeyboard(**settings)
+                    keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
+                    keyboard.add_button(label="следующий", color=VkKeyboardColor.SECONDARY)
+                    search(self, event, keyboard)
                     'add worksheets to the data base according to event.user_id'
 
                 elif event.text.lower() == 'пока':
                     self.message_send(
-                        event.user_id, 'До новых встреч')
+                        event.user_id, 'До встречи')
                 else:
                     self.message_send(
                         event.user_id, 'Неизвестная команда')
+
+
+def search(self, event, keyboard):
+    self.message_send(
+        event.user_id, 'Начинаем поиск')
+    if self.worksheets:
+        worksheet = self.worksheets.pop()
+        photos = self.vk_tools.get_photos(worksheet['id'])
+        photo_string = ''
+        for photo in photos:
+            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+    else:
+        self.worksheets = self.vk_tools.search_worksheet(
+            self.params, self.offset)
+
+        worksheet = self.worksheets.pop()
+        'check worksheets to the data base according to event.user_id'
+
+        photos = self.vk_tools.get_photos(worksheet['id'])
+        photo_string = ''
+        for photo in photos:
+            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+        self.offset += 10
+
+    self.message_send(
+        event.user_id,
+        f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
+        attachment=photo_string,
+        keyboard=keyboard.get_keyboard()
+    )
 
 
 if __name__ == '__main__':
