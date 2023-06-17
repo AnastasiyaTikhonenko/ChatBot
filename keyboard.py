@@ -48,16 +48,16 @@ class BotInterface():
         for event in self.longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                 if event.text.lower() == 'привет':
-                    '''Логика для получения данных о пользователе'''
+                    '''Receive user's data'''
                     self.params = self.vk_tools.get_profile_info(event.user_id)
                     self.message_send(
                         event.user_id, f'Привет, друг, {self.params["name"]}')
                 elif event.text.lower() == 'поиск':
                     keyboard = VkKeyboard(one_time=True)
                     keyboard.add_callback_button(label="поиск", color=VkKeyboardColor.POSITIVE)
-                    keyboard.add_line()
-                    keyboard.add_button(label="отмена", color=VkKeyboardColor.SECONDARY)
-                    '''Логика для поиска анкет'''
+                    # keyboard.add_line()
+                    # keyboard.add_callback_button(label="отмена", color=VkKeyboardColor.SECONDARY)
+                    '''Searching worksheets'''
                     self.message_send(
                         event.user_id, 'Начинаем поиск')
                     if self.worksheets:
@@ -71,7 +71,7 @@ class BotInterface():
                             self.params, self.offset)
 
                         worksheet = self.worksheets.pop()
-                        'првоерка анкеты в бд в соотвествие с event.user_id'
+                        'check worksheets to the data base according to event.user_id'
 
                         photos = self.vk_tools.get_photos(worksheet['id'])
                         photo_string = ''
@@ -85,7 +85,7 @@ class BotInterface():
                         attachment=photo_string
                     )
 
-                    'добавить анкету в бд в соотвествие с event.user_id'
+                    'add worksheets to the data base according to event.user_id'
 
                 elif event.text.lower() == 'пока':
                     self.message_send(
