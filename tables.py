@@ -27,7 +27,7 @@ def create_table_seen():
     cur = connection.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS seen (
             id serial,
-            vk_id varchar(50)  NOT null
+            vk_id varchar(50)  NOT null,
             seen_vk_id varchar(50) NOT null);"""
                 )
     print('The table seen successfully created')
