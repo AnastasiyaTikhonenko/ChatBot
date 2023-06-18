@@ -16,6 +16,7 @@ class BotInterface():
         self.params = {}
         self.worksheets = []
         self.offset = 0
+        self.position = 0
 
     def message_send(self, user_id, message, attachment=None, keyboard=None):
         result = self.vk.method('messages.send',
@@ -47,7 +48,8 @@ class BotInterface():
                     self.message_send(
                         event.user_id, f'Привет, {self.params["name"]}')
                 elif event.text.lower() == 'поиск' or event.text.lower() == 'следующий':
-                    create_db()
+                    self.message_send(
+                        event.user_id, 'Начинаем поиск')
                     self.params = self.vk_tools.get_profile_info(event.user_id)
                     settings = dict(one_time=False, inline=True)
                     keyboard = VkKeyboard(**settings)
@@ -76,14 +78,15 @@ class BotInterface():
 
 
 def search(self, event):
-    self.message_send(
-        event.user_id, 'Начинаем поиск')
     if self.worksheets:
         worksheet = self.worksheets.pop()
         photos = self.vk_tools.get_photos(worksheet['id'])
         photo_string = ''
         for photo in photos:
             photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+        self.position += 1
+        if self.position > len(self.worksheets):
+            self.worksheets = None
     else:
         self.worksheets = self.vk_tools.search_worksheet(
             self.params, self.offset)
@@ -95,19 +98,16 @@ def search(self, event):
         photo_string = ''
         for photo in photos:
             photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-        self.offset += 10
+        self.position = 0
+        self.offset += len(self.worksheets)
+        print(f'New offset is {self.offset}')
 
     return {'id': worksheet["id"],
             'message': f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
             'attachment': photo_string}
-    # self.message_send(
-    #     event.user_id,
-    #     f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
-    #     attachment=photo_string,
-    #     keyboard=keyboard.get_keyboard()
-    # )
 
 
 if __name__ == '__main__':
     bot_interface = BotInterface(comm_token, my_token)
+    create_db()
     bot_interface.event_handler()
