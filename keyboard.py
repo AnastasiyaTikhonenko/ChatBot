@@ -53,7 +53,18 @@ class BotInterface():
                     keyboard = VkKeyboard(**settings)
                     keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
                     keyboard.add_button(label="следующий", color=VkKeyboardColor.SECONDARY)
-                    search(self, event, keyboard)
+                    candidate = search(self, event)
+                    while not check_if_seen(event.user_id, candidate["id"]) is None:
+                        candidate = search(self, event)
+
+                    self.message_send(
+                        event.user_id,
+                        candidate["message"],
+                        attachment=candidate["attachment"],
+                        keyboard=keyboard.get_keyboard()
+                    )
+
+                    insert_seen(event.user_id, candidate["id"])
                     'add worksheets to the data base according to event.user_id'
 
                 elif event.text.lower() == 'пока':
@@ -64,7 +75,7 @@ class BotInterface():
                         event.user_id, 'Неизвестная команда')
 
 
-def search(self, event, keyboard):
+def search(self, event):
     self.message_send(
         event.user_id, 'Начинаем поиск')
     if self.worksheets:
@@ -86,12 +97,15 @@ def search(self, event, keyboard):
             photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
         self.offset += 10
 
-    self.message_send(
-        event.user_id,
-        f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
-        attachment=photo_string,
-        keyboard=keyboard.get_keyboard()
-    )
+    return {'id': worksheet["id"],
+            'message': f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
+            'attachment': photo_string}
+    # self.message_send(
+    #     event.user_id,
+    #     f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
+    #     attachment=photo_string,
+    #     keyboard=keyboard.get_keyboard()
+    # )
 
 
 if __name__ == '__main__':
