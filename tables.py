@@ -33,7 +33,7 @@ def create_table_vk_candidates():
     print('The table vk_candidates successfully created')
 
 
-def insert_vk_candidates(first_name, last_name, vk_id, vk_link):
+def insert_vk_candidates(vk_id):
     cur = connection.cursor()
     cur.execute(f"""INSRERT INTO vk_candidates (vk_id)
             VALUES ('{vk_id}');"""

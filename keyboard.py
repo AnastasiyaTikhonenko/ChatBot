@@ -48,13 +48,14 @@ class BotInterface():
                         event.user_id, f'Привет, {self.params["name"]}')
                 elif event.text.lower() == 'поиск' or event.text.lower() == 'следующий':
                     create_db()
+                    insert_vk_candidates(vk_id)
                     self.params = self.vk_tools.get_profile_info(event.user_id)
                     settings = dict(one_time=False, inline=True)
                     keyboard = VkKeyboard(**settings)
                     keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
                     keyboard.add_button(label="следующий", color=VkKeyboardColor.SECONDARY)
                     search(self, event, keyboard)
-                    # insert_seen(vk_id)
+                    insert_seen(vk_id)
                     'add worksheets to the data base according to event.user_id'
 
                 elif event.text.lower() == 'пока':
