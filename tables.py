@@ -23,51 +23,30 @@ connection = psycopg2.connect(
 
 connection.autocommit = True
 
-
-def create_table_vk_candidates():
-    cur = connection.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS vk_candidates (
-               id serial,
-               vk_id varchar(50) NOT NULL PRIMARY key);"""
-                )
-    print('The table vk_candidates successfully created')
-
-
-def insert_vk_candidates(vk_id):
-    cur = connection.cursor()
-    cur.execute(f"""INSRERT INTO vk_candidates (vk_id)
-            VALUES ('{vk_id}');"""
-                )
-
 def create_table_seen():
     cur = connection.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS vk_candidates (
+    cur.execute("""CREATE TABLE IF NOT EXISTS seen (
             id serial,
-            vk_id varchar(50) NOT null PRIMARY key);"""
+            vk_id varchar(50)  NOT null
+            seen_vk_id varchar(50) NOT null);"""
                 )
     print('The table seen successfully created')
 
 
-def insert_seen(vk_id, offset):
+def insert_seen(vk_id, vk_seen_id):
     cur = connection.cursor()
-    cur.execute(f"""INSRERT INTO seen (vk_id)
-            VALUES ('{vk_id}')
-            OFFSET '{offset}';"""
+    cur.execute(f"""INSERT INTO seen (vk_id, seen_vk_id)
+            VALUES ('{vk_id}', '{vk_seen_id}');"""
                 )
 
 
-def select(offset):
+def check_if_seen(vk_id, vk_candidate):
     cur = connection.cursor()
     cur.execute(
-        f"""SELECT vc.vk_id, s.vk_id
-            FROM vk_candidates AS vc
-            RIGHR JOIN seen AS s
-            ON vc.vk_id = s.vk_id
-            WHERE s.vk_id IS NULL
-            OFFSET '{offset}';"""
+        f"""SELECT seen_vk_id
+            FROM seen WHERE vk_id = '{vk_id}' AND seen_vk_id = '{vk_candidate}'"""
     )
-    return cursor.fetchone()
+    return cur.fetchone()
 
 def create_db():
-    create_table_vk_candidates()
     create_table_seen()
