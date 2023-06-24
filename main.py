@@ -1,98 +1,112 @@
-from pprint import pprint
-from datetime import datetime
 import vk_api
-from vk_api.exceptions import ApiError
+from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.utils import get_random_id
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from tables import *
+from config import comm_token, my_token
+from search_params import VkTools
+import json
 
-from config import my_token
 
+class BotInterface():
+    def __init__(self, comm_token, my_token):
+        self.vk = vk_api.VkApi(token=comm_token)
+        self.longpoll = VkLongPoll(self.vk)
+        self.vk_tools = VkTools(my_token)
+        self.params = {}
+        self.worksheets = []
+        self.offset = 0
+        self.position = 0
 
-class VkTools:
-    def __init__(self, my_token):
-        self.vkapi = vk_api.VkApi(token=my_token)
+    def message_send(self, user_id, message, attachment=None, keyboard=None):
+        result = self.vk.method('messages.send',
+                                {'user_id': user_id,
+                                 'message': message,
+                                 'attachment': attachment,
+                                 'keyboard': keyboard,
+                                 'random_id': get_random_id()}
+                                )
+        print(result)
 
-    def _bdate_toyear(self, bdate):
-        dates = bdate.split('.')
-        now = datetime.now().year
-        if len(dates) > 2 and bdate is not None:
-            user_year = dates[2]
-            # dates.append(int(user_year[2]))
-        else:
-            user_year = now
+    def buttons(self, user_id, message):
+        keyb = {"one_time": True, "buttons": []}
+        self.vk.method('messages.send',
+                       {'user_id': user_id,
+                        'message': message,
+                        'keyboard': json.dumps(keyb),
+                        'random_id': get_random_id()}
+                       )
 
-        return now - int(user_year)
+    # event handling / receive msg
 
-    def get_profile_info(self, user_id):
+    def event_handler(self):
+        for event in self.longpoll.listen():
+            if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+                if event.text.lower() == 'привет':
+                    '''Receive user's data'''
+                    self.params = self.vk_tools.get_profile_info(event.user_id)
+                    self.message_send(
+                        event.user_id, f'Привет, {self.params["name"]}')
+                elif event.text.lower() == 'поиск' or event.text.lower() == 'следующий':
+                    self.message_send(
+                        event.user_id, 'Начинаем поиск')
+                    self.params = self.vk_tools.get_profile_info(event.user_id)
+                    settings = dict(one_time=False, inline=True)
+                    keyboard = VkKeyboard(**settings)
+                    keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
+                    keyboard.add_button(label="следующий", color=VkKeyboardColor.SECONDARY)
+                    candidate = search(self, event)
+                    while not check_if_seen(event.user_id, candidate["id"]) is None:
+                        candidate = search(self, event)
 
-        try:
-            info, = self.vkapi.method('users.get',
-                                      {'user_id': user_id,
-                                       'fields': 'city,sex,relation,bdate'
-                                       }
-                                      )
-        except ApiError as e:
-            info = {}
-            print(f'error = {e}')
+                    self.message_send(
+                        event.user_id,
+                        candidate["message"],
+                        attachment=candidate["attachment"],
+                        keyboard=keyboard.get_keyboard()
+                    )
 
-        result = {'name': (info['first_name'] + ' ' + info['last_name']) if
-        'first_name' in info and 'last_name' in info else None,
-                  'sex': info.get('sex'),
-                  'city': info.get('city')['title'] if info.get('city') is not None else None,
-                  'year': self._bdate_toyear(info.get('bdate'))
-                  }
-        return result
+                    insert_seen(event.user_id, candidate["id"])
+                    'add worksheets to the data base according to event.user_id'
 
-    def search_worksheet(self, params, offset):
-        try:
-            users = self.vkapi.method('users.search',
-                                      {
-                                          'count': 50,
-                                          'offset': offset,
-                                          'hometown': params['city'],
-                                          'sex': 1 if params['sex'] == 2 else 2,
-                                          'has_photo': True,
-                                          'age_from': params['year'] - 3,
-                                          'age_to': params['year'] + 3,
-                                      }
-                                      )
-        except ApiError as e:
-            users = {}
-            print(f'error = {e}')
+                elif event.text.lower() == 'пока':
+                    self.message_send(
+                        event.user_id, 'До встречи')
+                else:
+                    self.message_send(
+                        event.user_id, 'Неизвестная команда')
 
-        result = [{'name': item['first_name'] + ' ' + item['last_name'],
-                   'id': item['id']
-                   } for item in users['items'] if item['is_closed'] is False
-                  ]
+    def search(self, event):
+        if self.worksheets:
+            worksheet = self.worksheets.pop()
+            photos = self.vk_tools.get_photos(worksheet['id'])
+            photo_string = ''
+            for photo in photos:
+                photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+            self.position += 1
+            if self.position > len(self.worksheets):
+                self.worksheets = None
+            else:
+                self.worksheets = self.vk_tools.search_worksheet(
+                    self.params, self.offset)
 
-        return result
+                worksheet = self.worksheets.pop()
+                'check worksheets to the data base according to event.user_id'
 
-    def get_photos(self, id):
-        try:
-            photos = self.vkapi.method('photos.get',
-                                       {'owner_id': id,
-                                        'album_id': 'profile',
-                                        'extended': 1
-                                        }
-                                       )
-        except ApiError as e:
-            photos = {}
-            print(f'error = {e}')
+                photos = self.vk_tools.get_photos(worksheet['id'])
+                photo_string = ''
+                for photo in photos:
+                    photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+                self.position = 0
+                self.offset += len(self.worksheets)
+                print(f'New offset is {self.offset}')
 
-        result = [{'owner_id': item['owner_id'],
-                   'id': item['id'],
-                   'likes': item['likes']['count'],
-                   'comments': item['comments']['count']
-                   } for item in photos['items']
-                  ]
-        '''сортировка пo лайкам и комментам'''
-        return result[:3]
+        return {'id': worksheet["id"],
+                'message': f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
+                'attachment': photo_string}
 
 
 if __name__ == '__main__':
-    user_id = 87104111
-    tools = VkTools(my_token)
-    params = tools.get_profile_info(user_id)
-    worksheets = tools.search_worksheet(params, 50)
-    worksheet = worksheets.pop()
-    photos = tools.get_photos(worksheet['id'])
-
-    pprint(worksheets)
+    bot_interface = BotInterface(comm_token, my_token)
+    create_db()
+    bot_interface.event_handler()
