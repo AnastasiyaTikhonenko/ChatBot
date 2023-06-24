@@ -55,9 +55,11 @@ class BotInterface():
                     keyboard = VkKeyboard(**settings)
                     keyboard.add_button(label="поиск", color=VkKeyboardColor.POSITIVE)
                     keyboard.add_button(label="следующий", color=VkKeyboardColor.SECONDARY)
-                    candidate = search(self, event)
+
+                    candidate = self.search()
+
                     while not check_if_seen(event.user_id, candidate["id"]) is None:
-                        candidate = search(self, event)
+                        candidate = self.search()
 
                     self.message_send(
                         event.user_id,
@@ -76,7 +78,7 @@ class BotInterface():
                     self.message_send(
                         event.user_id, 'Неизвестная команда')
 
-    def search(self, event):
+    def search(self):
         if self.worksheets:
             worksheet = self.worksheets.pop()
             photos = self.vk_tools.get_photos(worksheet['id'])
@@ -86,20 +88,18 @@ class BotInterface():
             self.position += 1
             if self.position > len(self.worksheets):
                 self.worksheets = None
-            else:
-                self.worksheets = self.vk_tools.search_worksheet(
-                    self.params, self.offset)
-
-                worksheet = self.worksheets.pop()
-                'check worksheets to the data base according to event.user_id'
-
-                photos = self.vk_tools.get_photos(worksheet['id'])
-                photo_string = ''
-                for photo in photos:
-                    photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                self.position = 0
-                self.offset += len(self.worksheets)
-                print(f'New offset is {self.offset}')
+        else:
+            self.worksheets = self.vk_tools.search_worksheet(
+                self.params, self.offset)
+            worksheet = self.worksheets.pop()
+            'check worksheets to the data base according to event.user_id'
+            photos = self.vk_tools.get_photos(worksheet['id'])
+            photo_string = ''
+            for photo in photos:
+                photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+            self.position = 0
+            self.offset += len(self.worksheets)
+            print(f'New offset is {self.offset}')
 
         return {'id': worksheet["id"],
                 'message': f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
