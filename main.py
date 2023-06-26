@@ -61,6 +61,9 @@ class BotInterface():
                     while not check_if_seen(event.user_id, candidate["id"]) is None:
                         candidate = self.search()
 
+                    photo_string = self.get_photos(candidate)
+                    candidate['attachment'] = photo_string
+
                     self.message_send(
                         event.user_id,
                         candidate["message"],
@@ -81,29 +84,24 @@ class BotInterface():
     def search(self):
         if self.worksheets:
             worksheet = self.worksheets.pop()
-            photos = self.vk_tools.get_photos(worksheet['id'])
-            photo_string = ''
-            for photo in photos:
-                photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-            self.position += 1
-            if self.position > len(self.worksheets):
-                self.worksheets = None
         else:
             self.worksheets = self.vk_tools.search_worksheet(
                 self.params, self.offset)
             worksheet = self.worksheets.pop()
-            'check worksheets to the data base according to event.user_id'
-            photos = self.vk_tools.get_photos(worksheet['id'])
-            photo_string = ''
-            for photo in photos:
-                photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-            self.position = 0
             self.offset += len(self.worksheets)
-            print(f'New offset is {self.offset}')
 
         return {'id': worksheet["id"],
-                'message': f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
-                'attachment': photo_string}
+                'message': f'имя: {worksheet["name"]} ссылка: vk.com/id{worksheet["id"]}'}
+
+    def get_photos(self, worksheet):
+        photos = self.vk_tools.get_photos(worksheet['id'])
+        photos.sort(reverse=True, key=lambda x: x.get('likes'))
+        photo_string = ''
+        for photo in photos:
+            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+        if self.position > len(self.worksheets):
+            self.worksheets = None
+        return photo_string
 
 
 if __name__ == '__main__':
